@@ -9,7 +9,7 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <Authors>Inkle</Authors>
     <Description>Pure C# runtime for ink narrative scripting language</Description>
-    <Version>1.2.2</Version>
+    <Version>1.2.1</Version>
   </PropertyGroup>
 
 
