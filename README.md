@@ -1,168 +1,129 @@
-# ink-Unity integration
+# ink-unity-integration-runtime-only
 
-This Unity package allows you to integrate inkle's [ink narrative scripting language](http://www.inklestudios.com/ink) with Unity and provides tools to **compile**, **play** and **debug** your stories.
+本项目提供 ink 叙事脚本语言的纯 C# 运行时，可以独立运行，不依赖 Unity。
 
-# Overview
+## 项目目标
 
- - **Using ink in your game**: Allows running and controlling ink files in Unity via the [C# runtime API](https://github.com/inkle/ink/blob/master/Documentation/RunningYourInk.md).
-  
- - **ink player**: Provides a powerful [Ink Player Window](https://github.com/inkle/ink-unity-integration/blob/master/Documentation/InkPlayerWindow.md) for playing and debugging stories.
- 
- - **Auto compilation**: Instantly creates and updates a JSON story file when a `.ink` is updated.
-  
- - **Inspector tools**: Provides an icon for ink files, and a custom inspector that provides information about a file.
+- 提供纯 C# 运行时，允许 ink 在纯 C# 环境中运行
+- 构建独立的 .NET Standard 2.1 DLL
+- 方便同步主仓库（https://github.com/inkle/ink-unity-integration）的修改
 
-# Getting started
+## 项目结构
 
-## :inbox_tray: Installation
-There are 4 different ways to install this plugin:
+```
+ink-unity-integration-runtime-only/
+├── Runtime/                    # 纯 C# 运行时项目
+│   ├── InkRuntime/            # 运行时核心代码
+│   ├── InkCompiler/           # 编译器代码
+│   └── Ink.csproj             # .NET Standard 2.1 项目文件
+├── upstream/                   # 主仓库 submodule
+├── build.bat                   # Windows 构建脚本
+├── build.sh                    # Linux/Mac 构建脚本
+└── README.md                   # 本文件
+```
 
-### :star:As a .UnityPackage:star:
-This will import the source into your Assets folder. This is a good option if you intend to edit the source for your own needs.
-* [Download the latest .UnityPackage](https://github.com/inkle/ink-unity-integration/releases).
-* Open the downloaded file to import it into your Unity project.
+## 构建 DLL
 
-### As a UPM Package
-Installing via a package allows you to easily update via Unity's Package Manager window. This is best if you don't need to edit the source.
-* When installed via UPM, demo projects can be imported from Packages > Ink Unity Integration > Demos
+### 使用构建脚本
 
-#### Via Package Manager
-* Add the following line to PROJECT ROOT/Packages/manifest.json:
-`"com.inkle.ink-unity-integration": "https://github.com/inkle/ink-unity-integration.git#upm"`
-#### OpenUPM
-* Navigate to [OpenUPM](https://openupm.com/packages/com.inkle.ink-unity-integration/) and follow their instructions
-* The project will have installed at Packages > Ink Unity Integration.
+**Windows:**
+```bash
+build.bat
+```
 
+**Linux/Mac:**
+```bash
+chmod +x build.sh
+./build.sh
+```
 
-### From GitHub
-* You can clone/download/fork the project on [GitHub](https://github.com/inkle/ink-unity-integration).
-* The easiest way to download it is to click the green Code button and select Download ZIP
-* Install by moving the folder Packages/Ink to anywhere in your Unity project's Assets folder
+### 手动构建
 
-### Via the Asset Store
+```bash
+cd Runtime
+dotnet build -c Release
+```
 
-For convenience a .UnityPackage is hosted at the [Unity Asset Store](https://assetstore.unity.com/packages/tools/integration/ink-unity-integration-60055).
-**This version is updated rarely, and so is not recommended.**
-This will import the source into your Assets folder. This is a good option if you intend to edit the source for your own needs.
+构建完成后，DLL 位于：
+```
+Runtime/bin/Release/netstandard2.1/Ink.dll
+```
 
+## 同步主仓库更新
 
+本项目使用 git submodule 来跟踪主仓库的更新。
 
-## :video_game: Demos
-This project includes a demo scene, providing a simple example of how to control an ink story with C# code using Unity UI.
+### 初始化 submodule（首次克隆项目时）
 
-(If you imported this package as a UPM, then you must first import the demos from Packages > Ink Unity Integration > Demos)
+```bash
+git submodule update --init --recursive
+```
 
-To run a demo, double-click the scene file at the root of the demo folder to open it, and press the Play button at the top of the screen to start it.
+### 更新主仓库代码
 
-## :page_facing_up: C# API
-The C# API provides all you need to control ink stories in code; advancing your story, making choices, diverting to knots, saving and loading, and much more.
+```bash
+# 更新 submodule 到主仓库的最新提交
+git submodule update --remote upstream
 
-[It is documented in the main ink repo](https://github.com/inkle/ink/blob/master/Documentation/RunningYourInk.md#getting-started-with-the-runtime-api).
+# 如果主仓库有更新，需要同步到 Runtime/ 目录
+# 手动复制 Packages/Ink/InkLibs/ 下的文件到 Runtime/ 目录
+```
 
-For convenience, the package also creates an (**Help > Ink > API Documentation**) menu option.
+### 同步流程
 
-## :pencil2: Writing ink
-For more information on writing with **ink**, see [the documentation in the main ink repo](https://github.com/inkle/ink). 
+1. 更新 submodule：
+   ```bash
+   git submodule update --remote upstream
+   ```
 
-For convenience, the package also creates an (**Help > Ink > Writing Tutorial**) menu option.
+2. 从 submodule 复制最新代码到 Runtime 目录：
+   ```bash
+   # 复制 InkRuntime
+   Get-ChildItem -Path "upstream/Packages/Ink/InkLibs/InkRuntime" -Filter "*.cs" -Recurse | Copy-Item -Destination { $_.FullName -replace [regex]::Escape("upstream/Packages/Ink/InkLibs/InkRuntime"), "Runtime\InkRuntime" } -Force
+   
+   # 复制 InkCompiler
+   Get-ChildItem -Path "upstream/Packages/Ink/InkLibs/InkCompiler" -Filter "*.cs" -Recurse | ForEach-Object { $destPath = $_.FullName -replace [regex]::Escape("upstream/Packages/Ink/InkLibs/InkCompiler"), "Runtime\InkCompiler"; $destDir = Split-Path $destPath -Parent; if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Force -Path $destDir | Out-Null }; Copy-Item $_.FullName -Destination $destPath -Force }
+   ```
 
+3. 重新构建 DLL：
+   ```bash
+   build.bat
+   ```
 
-## :question: Further Help
-For assistance with writing or code, [Inkle's Discord forum](https://discord.gg/tD8Am2K) is full of lovely people who can help you out!
+4. 提交更改：
+   ```bash
+   git add Runtime/
+   git commit -m "Sync with upstream"
+   ```
 
-To keep up to date with the latest news about ink [sign up for the mailing list](http://www.inklestudios.com/ink#signup).
+## 使用 DLL
 
+生成的 `Ink.dll` 可以在任何支持 .NET Standard 2.1 的项目中使用：
 
-# Features
+```csharp
+using Ink.Runtime;
+using Ink;
 
-## Compilation
-  
-Ink files must be compiled to JSON before they can be used in-game. 
-**This package compiles all edited ink files automatically.**
-By default, compiled files are created next to their ink file.
+// 从 JSON 加载故事
+var json = File.ReadAllText("story.json");
+var story = new Story(json);
 
-### Editor Compilation
-This package provides tools to automate this process when a .ink file is edited. 
+// 运行故事
+while (story.canContinue) {
+    var text = story.Continue();
+    Console.WriteLine(text);
+}
 
-**Disabling auto-compilation**: You might want to have manual control over ink compilation. If this is the case, you can disable "Compile ink automatically" in the InkSettings file or delete the InkPostProcessor class.
+// 处理选择
+foreach (var choice in story.currentChoices) {
+    Console.WriteLine($"{choice.index + 1}. {choice.text}");
+}
+```
 
-**Manual compilation**: If you have disabled auto-compilation, you can manually compile all ink files using the **Assets > Recompile Ink** menu item, individually via the inspector of an ink file, or via code using InkCompiler.CompileInk().
+## 分支
 
-**Play mode delay**: By default, ink does not compile while in play mode. This can be disabled in the InkSettings file.
+当前分支：`runtime-only`
 
-### In-game Compilation
+## 许可证
 
-The compiler is included in builds (See [WebGL best practices](#WebGLBestPractices) for information on removing it), enabling you to allow the editing of ink files as part of your game.
-
-
-## <a name="InkPlayerWindow"></a>Ink Player Window
-
-The Ink Player Window (**Window > Ink Player**) allows you to play stories in an editor window, and provides functionality to edit variables on the fly, test functions, profile performance, save and load states, and divert.
-
-To play a story, click the "play" button shown on the inspector of a compiled ink file, or drag a compiled ink story TextAsset into the window.
-
-**Editor Attaching**: Attaching the InkStory instance used by your game to the Ink Player window allows you to view and edit your story as it runs in game. 
-
-See BasicInkExampleEditor.cs in the Examples folder for an example of how to:
-* Show an attach/detach button on an inspector
-* Automatically attach on entering play mode
-
-[More information on using and extending Ink Player Window](https://github.com/inkle/ink-unity-integration/blob/master/Documentation/InkPlayerWindow.md)
-
-
-## Inspector tools
-
-This package replaces the icon for ink files to make them easier to spot, and adds a custom inspector for a selected ink file.
-
-**The Inspector**: Selecting an ink file displays its last compile time; lists any include files; and shows any errors, warnings or todos. It also shows a Play button which runs the story in the Ink Player Window.
-
-
-# Visual Scripting Support
-
-## Bolt
-There is currently no support for Bolt, Unity's official visual scripting tool. If you're interested in building one, we'd love to see it!
-
-## PlayMaker
-There's [unofficial support for PlayMaker here.](https://github.com/inkle/ink-unity-integration/issues/22) 
-
-
-We'd love to see this supported more if you'd like to assist the effort!
-
-
-# Source control tips
-
-When you edit ink files, the compiler will also update the corresponding compiled .json file. If no compiled file existed before, Unity will also create a meta file for it. It is recommended that you always commit both ink and json files at the same time to avoid the file being re-compiled by your team members.
-
-Adding or removing ink files will also make changes to the InkLibrary file, and we could recommend authors also commit this file for the same reasons.
-
-
-# <a name="WebGLBestPractices"></a>WebGL best practices
-
-WebGL builds should be as small as possible. The ink compiler is included in builds, but is typically only used in the editor. 
-If your game doesn't require compiling ink at runtime we recommend adding a .asmdef at Ink Unity Integration > InkLibs > InkCompiler that only functions in the editor.
-
-
-# FAQ
-
-* Is the Linux Unity Editor supported?
-
-  *Yes!*
-
-* What versions of Unity are supported?
-
-  We support 2020 LTS and above.
-  Until version 1.1.1 we supported 2018 LTS, which should also work going back to at least Unity 5.
-
-# Support us! :heart:
-
-Ink is free, forever; but we'd really appreciate your support!
-If you're able to give back, generous donations at our [Patreon](https://www.patreon.com/inkle) mean the world to us. 
-
-# Discord:
-
-Looking for help or want to meet likeminded writers/developers? Come say hello on our [Discord](https://discord.gg/inkle) server! 
-
-# License
-
-**ink** and this package is released under the MIT license. Although we don't require attribution, we'd love to know if you decide to use **ink** a project! Let us know on [Twitter](http://www.twitter.com/inkleStudios) or [by email](mailto:info@inklestudios.com).
-View the full licence [Here](https://github.com/inkle/ink-unity-integration/blob/master/LICENCE.md)
+与原项目保持一致。

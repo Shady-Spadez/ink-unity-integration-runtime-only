@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>Ink</AssemblyName>
+    <RootNamespace>Ink</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <Authors>Inkle</Authors>
+    <Description>Pure C# runtime for ink narrative scripting language</Description>
+    <Version>1.2.2</Version>
+  </PropertyGroup>
+
+
+</Project>
+
