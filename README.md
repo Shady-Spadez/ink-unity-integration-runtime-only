@@ -6,7 +6,7 @@
 
 - 提供纯 C# 运行时，允许 ink 在纯 C# 环境中运行
 - 构建独立的 .NET Standard 2.1 DLL
-- 方便同步主仓库（https://github.com/inkle/ink-unity-integration）的修改
+- 方便同步主仓库( https://github.com/inkle/ink-unity-integration )的修改
 
 ## 项目结构
 
